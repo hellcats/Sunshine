@@ -14,6 +14,11 @@
 #include "src/utility.h"
 
 #include "src/platform/common.h"
+#include "src/platform/linux/misc.h"
+#include "src/platform/linux/x11grab.h"
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 // Support older versions
 #ifndef REL_HWHEEL_HI_RES
@@ -909,6 +914,25 @@ void abs_mouse(input_t &input, const touch_port_t &touch_port, float x, float y)
   auto scaled_x = (int)std::lround((x + touch_port.offset_x) * ((float)target_touch_port.width / (float)touch_port.width));
   auto scaled_y = (int)std::lround((y + touch_port.offset_y) * ((float)target_touch_port.height / (float)touch_port.height));
 
+#ifdef SUNSHINE_BUILD_X11
+// Convert absolute to relative motion (fixes mouse wheel stuck when moving mouse bug)
+if (platf::g_Display) {
+  Window root, child;
+  int root_x, root_y, win_x, win_y;
+  unsigned mask;
+  unsigned width, height, border_width, depth;
+
+  Window root_win = XRootWindow(platf::g_Display, 0);
+  XGetGeometry(platf::g_Display, root_win, &root, &root_x, &root_y, &width, &height, &border_width, &depth);
+
+  XQueryPointer(platf::g_Display, root_win, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
+
+  auto deltaX = x - root_x;
+  auto deltaY = y - root_y;
+  move_mouse(input, deltaX, deltaY);
+  return;
+}
+#endif
   libevdev_uinput_write_event(touchscreen, EV_ABS, ABS_X, scaled_x);
   libevdev_uinput_write_event(touchscreen, EV_ABS, ABS_Y, scaled_y);
   libevdev_uinput_write_event(touchscreen, EV_KEY, BTN_TOOL_FINGER, 1);

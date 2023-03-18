@@ -686,6 +686,10 @@ struct shm_attr_t : public x11_attr_t {
   }
 };
 
+#ifdef SUNSHINE_BUILD_X11
+_XDisplay* g_Display;
+#endif
+
 std::shared_ptr<display_t> x11_display(platf::mem_type_e hwdevice_type, const std::string &display_name, const ::video::config_t &config) {
   if(hwdevice_type != platf::mem_type_e::system && hwdevice_type != platf::mem_type_e::vaapi && hwdevice_type != platf::mem_type_e::cuda) {
     BOOST_LOG(error) << "Could not initialize x11 display with the given hw device type"sv;
@@ -729,10 +733,12 @@ std::vector<std::string> x11_display_names() {
 
   BOOST_LOG(info) << "Detecting connected monitors"sv;
 
-  x11::xdisplay_t xdisplay { x11::OpenDisplay(nullptr) };
+  static x11::xdisplay_t xdisplay { x11::OpenDisplay(nullptr) };
   if(!xdisplay) {
     return {};
   }
+  g_Display = xdisplay.get();
+
 
   auto xwindow = DefaultRootWindow(xdisplay.get());
   screen_res_t screenr { x11::rr::GetScreenResources(xdisplay.get(), xwindow) };

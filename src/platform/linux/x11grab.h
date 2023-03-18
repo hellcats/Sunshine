@@ -31,7 +31,7 @@ public:
 
   /**
    * Capture and blend the cursor into the image
-   * 
+   *
    * img <-- destination image
    * offsetX, offsetY <--- Top left corner of the virtual screen
    */
@@ -56,5 +56,12 @@ public:
 xdisplay_t make_display() { return nullptr; }
 #endif
 } // namespace platf::x11
+
+#ifdef SUNSHINE_BUILD_X11
+namespace platf {
+  std::vector<std::string> x11_display_names();
+  extern _XDisplay* g_Display;
+}
+#endif
 
 #endif
